@@ -41,7 +41,7 @@ new Vue({
     cart: {},
     cartTotal: 0,
     isLoading: false,
-    UUID: '8db6e157-f1c7-4688-bf28-c4948d307e8e',
+    UUID: '603cb025-ce43-4d9c-bb8a-51732cf440ab',
     APIPATH: 'https://course-ec-api.hexschool.io',
   },
   created() {
