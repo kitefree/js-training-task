@@ -1,6 +1,7 @@
 import zh from './zh_TW.js';
 
 // 自定義設定檔案，錯誤的 className
+//bootstrap 的 classname  https://getbootstrap.com/docs/4.5/components/forms/#how-it-works
 VeeValidate.configure({
   classes: {
     valid: 'is-valid',
@@ -15,22 +16,34 @@ VeeValidate.localize('tw', zh);
 Vue.component('ValidationProvider', VeeValidate.ValidationProvider);
 // 將 VeeValidate 完整表單 驗證工具載入 作為全域註冊
 Vue.component('ValidationObserver', VeeValidate.ValidationObserver);
-// 掛載 Vue-Loading 套件
-Vue.use(VueLoading);
+
+// 掛載 Vue-Loading 套件 選其一使用，使用此方法會在 __proto__ 下看見 $loading 方法
+//Vue.use(VueLoading);
+
 // 全域註冊 VueLoading 並標籤設定為 loading
 Vue.component('loading', VueLoading);
 
-new Vue({
+// 全域註冊 filter 千分位功能
+Vue.filter('currency', function (value) {
+  if (typeof value === 'number') {
+    var parts = value.toString().split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return '$' + parts.join('.');
+  } else {
+    return value;
+  }
+
+})
+
+var app = new Vue({
   el: '#app',
   data: {
-    products: [],
-    tempProduct: {
-      num: 0,
-    },
-    status: {
+    products: [], //取得產品列表使用
+    tempProduct: {}, //取得產品明細使用
+    status: { //小圈圈動畫，記錄item.id使用
       loadingItem: '',
     },
-    form: {
+    form: { //表單使用
       name: '',
       email: '',
       tel: '',
@@ -49,6 +62,7 @@ new Vue({
     this.getCart();
   },
   methods: {
+    //請求服務器取得所有產品資料
     getProducts(page = 1) {
       this.isLoading = true;
       const url = `${this.APIPATH}/api/${this.UUID}/ec/products?page=${page}`;
@@ -57,6 +71,7 @@ new Vue({
         this.isLoading = false;
       });
     },
+    //請求服務器提供產品明細資料 by productID
     getDetailed(id) {
       this.status.loadingItem = id;
 
@@ -68,10 +83,15 @@ new Vue({
         // 因此 options 無法選擇預設欄位，故要增加這一行解決該問題
         // 另外如果直接使用物件新增屬性進去是會雙向綁定失效，因此需要使用 $set
         this.$set(this.tempProduct, 'num', 0);
-        $('#productModal').modal('show');
+
+        //使用$refs 代替用dom 方式去調用物件
+        $(this.$refs.productDetailModal).modal('show');
+        //$('#productDetailModal').modal('show');
+
         this.status.loadingItem = '';
       });
     },
+    //請求服務器將商品加入購物車記錄，支援直接添加與選數量添加
     addToCart(item, quantity = 1) {
       this.status.loadingItem = item.id;
 
@@ -84,30 +104,35 @@ new Vue({
 
       axios.post(url, cart).then(() => {
         this.status.loadingItem = '';
-        $('#productModal').modal('hide');
+        //使用$refs 代替用dom 方式去調用物件
+        $(this.$refs.productDetailModal).modal('hide');
         this.getCart();
       }).catch((error) => {
         this.status.loadingItem = '';
         console.log(error.response.data.errors);
-        $('#productModal').modal('hide');
+        //使用$refs 代替用dom 方式去調用物件
+        $(this.$refs.productDetailModal).modal('hide');
       });
     },
+    //請求服務器提供購物車資料
     getCart() {
       this.isLoading = true;
+      this.cartTotal = 0;
       const url = `${this.APIPATH}/api/${this.UUID}/ec/shopping`;
 
       axios.get(url).then((response) => {
         this.cart = response.data.data;
         // 累加總金額
         this.cart.forEach((item) => {
-          this.cartTotal += item.product.price;
+          this.cartTotal += item.product.price * item.quantity;
         });
         this.isLoading = false;
       });
     },
-    quantityUpdata(id, num) {
+    //請求服務器更新購物車資料 by productID
+    quantityUpdate(id, num) {
       // 避免商品數量低於 0 個
-      if(num <= 0) return;
+      if (num <= 0) return;
 
       this.isLoading = true;
       const url = `${this.APIPATH}/api/${this.UUID}/ec/shopping`;
@@ -122,6 +147,7 @@ new Vue({
         this.getCart();
       });
     },
+    //請求服務器刪除所有購物車資料
     removeAllCartItem() {
       this.isLoading = true;
       const url = `${this.APIPATH}/api/${this.UUID}/ec/shopping/all/product`;
@@ -132,6 +158,7 @@ new Vue({
           this.getCart();
         });
     },
+    //請求服務器刪除購物車資料 by productID
     removeCartItem(id) {
       this.isLoading = true;
       const url = `${this.APIPATH}/api/${this.UUID}/ec/shopping/${id}`;
@@ -161,3 +188,5 @@ new Vue({
     },
   },
 });
+
+console.log(app);
