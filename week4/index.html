@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="Description" content="Enter your description here" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.1/css/all.min.css">
+
+    <title>第四週</title>
+    <style>
+        .enabledClass {
+            color: green;
+        }
+    </style>
+</head>
+
+<body>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.1/umd/popper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.js"></script>
+
+    <BR>
+    <div id="app">
+
+
+        <div class="container">            
+            <button type="button" class="btn btn-primary" @click="btnAdd">建立新的產品</button><BR><BR>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">分類</th>
+                        <th scope="col">產品名稱</th>
+                        <th scope="col">圖片</th>
+                        <th scope="col">原價</th>
+                        <th scope="col">售價</th>
+                        <th scope="col">是否啟用</th>
+                        <th scope="col">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item,key) in productList" :key="item.id">
+                        <th scope="row">{{key+1}}</th>
+                        <td>{{item.category}}</td>
+                        <td><img :src="item.imageUrl" width="50" height="50" /></td>
+                        <td>{{item.title}}</td>
+                        <td>{{item.origin_price}}</td>
+                        <td>{{item.price}}</td>
+                        <td :class="{enabledClass:item.enabled}">{{item.enabled}}</td>
+                        <td>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-primary" @click="btnEdit(item)">編輯</button>
+                                <button type="button" class="btn btn-danger" :data-id="item.id"
+                                    @click="btnDeleteConfirm">刪除</button>
+                            </div>
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+
+
+            <pagination :pages="pagination" @update="btnQuery"></pagination>
+        </div>
+
+        <div class="modal fade in" id="deleteProductModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-xl" role="document">
+                <div class="modal-content border-0">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteProductModalLabel">刪除產品</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        確定要刪除產品
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-danger" @click="btnDeleteYes">刪除</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade in" id="fillProductModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <modal :mode="mode" :temp-product="tempProduct" @to-save="btnSave"></modal>
+        </div>
+
+        
+    </div>
+    <script src="all.js" type="module"></script>
+</body>
+
+</html>
