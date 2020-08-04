@@ -17,7 +17,7 @@ Vue.component('ValidationProvider', VeeValidate.ValidationProvider);
 // 將 VeeValidate 完整表單 驗證工具載入 作為全域註冊
 Vue.component('ValidationObserver', VeeValidate.ValidationObserver);
 
-// 掛載 Vue-Loading 套件 選其一使用，使用此方法會在 __proto__ 下看見 $loading 方法
+// 掛載 Vue-Loading 套件 選其一使用，使用此方法會在 __proto__ 可看見 $loading 方法
 //Vue.use(VueLoading);
 
 // 全域註冊 VueLoading 並標籤設定為 loading
@@ -33,7 +33,7 @@ Vue.filter('currency', function (value) {
     return value;
   }
 
-})
+});
 
 var app = new Vue({
   el: '#app',
@@ -51,12 +51,21 @@ var app = new Vue({
       payment: '',
       message: '',
     },
+    formColumnName: { //表單使用
+      name: '收件人姓名',
+      email: 'Email',
+      tel: '手機',
+      address: '地址',
+      payment: '購買方式',
+      message: '留言',
+    },
     cart: {},
     cartTotal: 0,
     isLoading: false,
     UUID: '603cb025-ce43-4d9c-bb8a-51732cf440ab',
     APIPATH: 'https://course-ec-api.hexschool.io',
   },
+  //vue instance 被 constructor 建立後，在這裡完成 data binding
   created() {
     this.getProducts();
     this.getCart();
@@ -64,16 +73,16 @@ var app = new Vue({
   methods: {
     //請求服務器取得所有產品資料
     getProducts(page = 1) {
-      this.isLoading = true;
+      this.pageLoading(true);
       const url = `${this.APIPATH}/api/${this.UUID}/ec/products?page=${page}`;
       axios.get(url).then((response) => {
         this.products = response.data.data;
-        this.isLoading = false;
+        this.pageLoading(false);
       });
     },
     //請求服務器提供產品明細資料 by productID
     getDetailed(id) {
-      this.status.loadingItem = id;
+      this.dotLoadingById(id);
 
       const url = `${this.APIPATH}/api/${this.UUID}/ec/product/${id}`;
 
@@ -88,12 +97,20 @@ var app = new Vue({
         $(this.$refs.productDetailModal).modal('show');
         //$('#productDetailModal').modal('show');
 
-        this.status.loadingItem = '';
+        this.dotLoadingById('');
       });
+    },
+    //頁面loading效果
+    pageLoading(show = true) {
+      this.isLoading = show;
+    },
+    //點點loading效果
+    dotLoadingById(id = '') {
+      this.status.loadingItem = id;
     },
     //請求服務器將商品加入購物車記錄，支援直接添加與選數量添加
     addToCart(item, quantity = 1) {
-      this.status.loadingItem = item.id;
+      this.dotLoadingById(item.id);
 
       const url = `${this.APIPATH}/api/${this.UUID}/ec/shopping`;
 
@@ -103,12 +120,12 @@ var app = new Vue({
       };
 
       axios.post(url, cart).then(() => {
-        this.status.loadingItem = '';
+        this.dotLoadingById('');
         //使用$refs 代替用dom 方式去調用物件
         $(this.$refs.productDetailModal).modal('hide');
         this.getCart();
       }).catch((error) => {
-        this.status.loadingItem = '';
+        this.dotLoadingById('');
         console.log(error.response.data.errors);
         //使用$refs 代替用dom 方式去調用物件
         $(this.$refs.productDetailModal).modal('hide');
@@ -116,7 +133,7 @@ var app = new Vue({
     },
     //請求服務器提供購物車資料
     getCart() {
-      this.isLoading = true;
+      this.pageLoading(true);
       this.cartTotal = 0;
       const url = `${this.APIPATH}/api/${this.UUID}/ec/shopping`;
 
@@ -126,7 +143,7 @@ var app = new Vue({
         this.cart.forEach((item) => {
           this.cartTotal += item.product.price * item.quantity;
         });
-        this.isLoading = false;
+        this.pageLoading(false);
       });
     },
     //請求服務器更新購物車資料 by productID
@@ -134,7 +151,7 @@ var app = new Vue({
       // 避免商品數量低於 0 個
       if (num <= 0) return;
 
-      this.isLoading = true;
+      this.pageLoading(true);
       const url = `${this.APIPATH}/api/${this.UUID}/ec/shopping`;
 
       const data = {
@@ -143,50 +160,53 @@ var app = new Vue({
       };
 
       axios.patch(url, data).then(() => {
-        this.isLoading = false;
+        this.pageLoading(false);
         this.getCart();
       });
     },
     //請求服務器刪除所有購物車資料
     removeAllCartItem() {
-      this.isLoading = true;
+      this.pageLoading(true);
       const url = `${this.APIPATH}/api/${this.UUID}/ec/shopping/all/product`;
 
       axios.delete(url)
         .then(() => {
-          this.isLoading = false;
+          this.pageLoading(false);
           this.getCart();
         });
     },
     //請求服務器刪除購物車資料 by productID
     removeCartItem(id) {
-      this.isLoading = true;
+      this.pageLoading(true);
       const url = `${this.APIPATH}/api/${this.UUID}/ec/shopping/${id}`;
 
       axios.delete(url).then(() => {
-        this.isLoading = false;
+        this.pageLoading(false);
         this.getCart();
       });
     },
+    //請求服務器寫入訂單資訊
     createOrder() {
-      this.isLoading = true;
+      this.pageLoading(true);
       const url = `${this.APIPATH}/api/${this.UUID}/ec/orders`;
 
       axios.post(url, this.form).then((response) => {
         if (response.data.data.id) {
-          this.isLoading = false;
           // 跳出提示訊息
-          $('#orderModal').modal('show');
+          //使用$refs 代替用dom 方式去調用物件
+          $(this.$refs.orderModal).modal('show');
+          //$('#orderModal').modal('show');
 
-          // 重新渲染購物車
+          // 訂單送出成功後，重新渲染購物車(購物車會清空)
           this.getCart();
         }
       }).catch((error) => {
-        this.isLoading = false;
         console.log(error.response.data.errors);
+      }).finally(() => {
+        /* 不論成功失敗，都做些事 */
+        this.pageLoading(false);
+
       });
     },
   },
 });
-
-console.log(app);
